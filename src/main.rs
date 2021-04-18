@@ -77,7 +77,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instruction; 16] {
                     ("r1", "r0") => (Register::R1, Source::Register(Register::R0)),
                     ("r0", imm) => (Register::R0, Source::Immediate(imm.parse().expect("Can't parse immediate value"))),
                     ("r1", imm) => (Register::R1, Source::Immediate(imm.parse().expect("Can't parse immediate value"))),
-                    _ => panic!("Wrong arguments supplied into MUL instruction")
+                    _ => panic!("Wrong arguments supplied into MOV instruction")
                 };
 
                 Instruction::MOV(tg, src)
