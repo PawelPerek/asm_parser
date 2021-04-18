@@ -28,6 +28,8 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
         let mut parts = line.split_whitespace();
         let instruction = parts.next().unwrap();
         let payload = parts.collect::<Vec<&str>>().join("");
+
+        print!("Instruction: {}, payload: {}", instruction, payload);
     }
 
     intructions
@@ -35,7 +37,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
 
 fn main() {
     let path = std::env::args().nth(1).unwrap();
-    let file = std::fs::File::open(path).expect(format!("Failed to open file, {}", path));
+    let file = std::fs::File::open(&path).expect(format!("Failed to open file: {}", path).as_str());
     let reader = std::io::BufReader::new(file);
 
 
