@@ -5,8 +5,8 @@ struct Address(usize);
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum Register{
-    R0, 
-    R1
+    R0 = 0, 
+    R1 = 1
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
