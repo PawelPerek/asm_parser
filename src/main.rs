@@ -1,3 +1,5 @@
+use std::io::BufRead;
+
 #[derive(Copy, Clone)]
 struct Address(u8);
 
@@ -17,13 +19,23 @@ enum Instructions {
     ST(Address)
 }
 
-fn parse(_asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
-    [Instructions::J(Address(0)); 16]
+fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
+    let mut ptr = 0;
+
+    let intructions = [Instructions::J(Address(0)); 16];
+
+    for line in asm.lines().map(|line| line.unwrap()) {
+        let mut parts = line.split_whitespace();
+        let instruction = parts.next().unwrap();
+        let payload = parts.collect::<Vec<&str>>().join("");
+    }
+
+    intructions
 }
 
 fn main() {
     let path = std::env::args().nth(1).unwrap();
-    let file = std::fs::File::open(path).unwrap();
+    let file = std::fs::File::open(path).expect(format!("Failed to open file, {}", path));
     let reader = std::io::BufReader::new(file);
 
 
