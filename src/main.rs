@@ -5,8 +5,8 @@ struct Address(usize);
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 enum Register{
-    R0 = 0, 
-    R1 = 1
+    R0, 
+    R1
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -16,7 +16,7 @@ enum Source {
 } 
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum Instructions {
+enum Instruction {
     J(Address),
     ADD(Register),
     MUL(Register),
@@ -28,10 +28,10 @@ enum Instructions {
     CONST(u8)
 }
 
-fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
+fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instruction; 16] {
     let mut ptr = 0;
 
-    let mut instructions = [Instructions::CONST(0); 16];
+    let mut instructions = [Instruction::CONST(0); 16];
 
     for line in asm.lines().map(|line| line.unwrap()) {
         let mut parts = line.split_whitespace();
@@ -41,7 +41,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
         let instruction = match instruction.to_lowercase().as_str() {
             "j" => {
                 let address = payload.parse().expect("Wrong payload for jmp instruction");
-                Instructions::J(Address(address))
+                Instruction::J(Address(address))
             },
             "add" => {
                 let mut regs = payload.split(",");
@@ -52,7 +52,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
                     _ => panic!("Wrong arguments supplied into ADD instruction")
                 };
 
-                Instructions::ADD(reg)
+                Instruction::ADD(reg)
             },
             "mul" => {
                 let mut regs = payload.split(",");
@@ -63,11 +63,11 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
                     _ => panic!("Wrong arguments supplied into MUL instruction")
                 };
 
-                Instructions::MUL(reg)
+                Instruction::MUL(reg)
             },
             "bigmul" => {
                 assert_eq!(payload, "");
-                Instructions::BIGMUL
+                Instruction::BIGMUL
             },
             "mov" => {
                 let mut regs = payload.split(",");
@@ -80,7 +80,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
                     _ => panic!("Wrong arguments supplied into MUL instruction")
                 };
 
-                Instructions::MOV(tg, src)
+                Instruction::MOV(tg, src)
             },
             "ld" => {
                 let mut regs = payload.split(",");
@@ -91,7 +91,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
                     _ => panic!("Wrong arguments supplied into LD instruction")
                 };
 
-                Instructions::LD(tg, src)
+                Instruction::LD(tg, src)
             },
             "st" => {
                 let mut regs = payload.split(",");
@@ -102,7 +102,7 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
                     _ => panic!("Wrong arguments supplied into ST instruction")
                 };
 
-                Instructions::ST(tg, src)
+                Instruction::ST(tg, src)
             },
             "db" => {
                 let mut regs = payload.split(",");
@@ -111,15 +111,15 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
                     (addr, val) => (Address(addr.parse().expect("Can't parse address")), val.parse().expect("Can't parse constant value"))
                 };
 
-                Instructions::DB(addr, val)
+                Instruction::DB(addr, val)
             },
             "" => continue,
             instr @ _ => panic!("Unrecognised instruction: {}", instr)
         };
 
         match instruction {
-            Instructions::DB(addr, val) => (
-                instructions[addr.0] = Instructions::CONST(val)
+            Instruction::DB(addr, val) => (
+                instructions[addr.0] = Instruction::CONST(val)
             ),
             instr @ _ => {
                 instructions[ptr] = instr;
@@ -135,6 +135,23 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instructions; 16] {
     instructions
 }
 
+fn output(instructions: [Instruction; 16]) -> String {
+    instructions.iter().map(|el| match el {
+        Instruction::J(Address(addr)) => 0b0000_0000 | *addr as u8,
+        Instruction::ADD(reg) => if reg == &Register::R0 {0b0010_0000} else {0b0011_0000},
+        Instruction::MUL(reg) => if reg == &Register::R0 {0b0100_0000} else {0b0101_0000},
+        Instruction::BIGMUL => 0b0001_0000,
+        Instruction::MOV(reg, src) => 0b1000_0000 | ((*reg as u8) << 4) | match src {
+            Source::Register(_) => 0b0010_0000,
+            Source::Immediate(val) => *val
+        },
+        Instruction::LD(reg, Address(addr)) => 0b1100_0000 | ((*reg as u8) << 4) | (*addr as u8),
+        Instruction::ST(reg, Address(addr)) => 0b1110_0000 | ((*reg as u8) << 4) | (*addr as u8),
+        Instruction::CONST(val) => *val,
+        _ => panic!("Parser error")
+    }).map(|el| format!("{:02X}", el)).collect::<Vec<String>>().join(",")
+}
+
 fn main() {
     let path = std::env::args().nth(1).unwrap();
     let file = std::fs::File::open(&path).expect(format!("Failed to open file: {}", path).as_str());
@@ -142,5 +159,5 @@ fn main() {
 
     let instructions = parse(reader);
 
-    print!("{:?}", instructions);
+    print!("{}", output(instructions));
 }
