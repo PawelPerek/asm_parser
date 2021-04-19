@@ -138,8 +138,8 @@ fn parse(asm: std::io::BufReader<std::fs::File>) -> [Instruction; 16] {
 fn output(instructions: [Instruction; 16]) -> String {
     instructions.iter().map(|el| match el {
         Instruction::J(Address(addr)) => 0b0000_0000 | *addr as u8,
-        Instruction::ADD(reg) => if reg == &Register::R0 {0b0010_0000} else {0b0011_0000},
-        Instruction::MUL(reg) => if reg == &Register::R0 {0b0100_0000} else {0b0101_0000},
+        Instruction::ADD(reg) => 0b0010_0000 | ((*reg as u8) << 4),
+        Instruction::MUL(reg) => 0b0100_0000 | ((*reg as u8) << 4),
         Instruction::BIGMUL => 0b0001_0000,
         Instruction::MOV(reg, src) => 0b1000_0000 | ((*reg as u8) << 4) | match src {
             Source::Register(_) => 0b0010_0000,
